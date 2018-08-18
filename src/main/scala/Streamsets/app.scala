@@ -28,7 +28,7 @@ object app {
     //df1.select(""" *, year(col("eventTime")) as date_year, month(col("eventTime")) as date_month""").show()
 
     df1.select('*, year('eventTime) as 'date_year, month('eventTime) as 'date_month).write.partitionBy("date_year","date_month").mode("overwrite")
-      .format("parquet").save("hdfs://localhost:9000/output/par1")
+     .format("parquet").save("hdfs://localhost:9000/output/par1")
 
     spark.read.parquet("hdfs://localhost:9000/output/par1/").printSchema()
 

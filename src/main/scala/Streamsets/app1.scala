@@ -1,6 +1,7 @@
 package Streamsets
 
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.functions._
 
 object app1 {
 
@@ -46,17 +47,36 @@ object app1 {
     val df_join=df.union(df1)
     df_join.show()
     df_join.createOrReplaceTempView("test")
-    spark.sql("select id,sal,time_stamp,eventTime from ( " +
-      "        select id,sal,time_stamp,eventTime, row_number() over(partition by id order by eventTime desc ) " +
-      "r from test) where r=1 ").show()
+
+   /* val out=spark.sql("select id,sal,time_stamp,eventTime,year(eventTime) as date_year, month(eventTime) as date_month from ( " +
+      "        select *, row_number() over(partition by id order by eventTime desc ) " +
+      "r from test) where r=1 ")*/
+
+
+   val out1=spark.sql("select t.id,sal,time_stamp,tm.eventTime,year(tm.eventTime) as date_year, month(tm.eventTime) as date_month from test t inner join" +
+            "(select id, max(eventTime) as eventTime from test group by id)tm on t.id=tm.id and t.eventTime=tm.eventTime"
+            )
+
+
+    out1.show()
+    //out.printSchema()
+
+    out1
+    .write.partitionBy("date_year","date_month").mode("overwrite").format("parquet").save("hdfs://localhost:9000/output/rlt")
+
+    spark.read.parquet("hdfs://localhost:9000/output/rlt/date_year=2017").printSchema()
+
+    /* out
+       .write.partitionBy("date_year","date_month").mode("overwrite")
+       .format("parquet").save("hdfs://localhost:9000/output/rlt") */
+
+
 
     //val p=spark.sql("select tm.id,sal,tm.max_dt,eventTime from test t inner join (select id, max(time_stamp) as max_dt " +
     //  "from test t2 group by id) tm on t.id=tm.id and t.time_stamp=tm.max_dt")
 
-  // p.show()
-    //19:57:01, 19:57:49
-    //21:13:26, 21:13:45
-    // 21:14:39  21:15:01
+
+
 
 
   }
